@@ -219,7 +219,7 @@ export default function ChatBox({ conversationId, setConversationId }: ChatBoxPr
             </div>
 
             {/* Chat Area */}
-            <div className="flex-1 overflow-y-auto mb-4 p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900 shadow-inner border border-gray-100 dark:border-zinc-800">
+            <div className="flex-1 overflow-y-auto mb-2 md:mb-4 p-2 md:p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900 shadow-inner border border-gray-100 dark:border-zinc-800">
                 {messages.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-center text-gray-400 opacity-60">
                         <Sparkles className="w-16 h-16 mb-4" />
@@ -232,7 +232,7 @@ export default function ChatBox({ conversationId, setConversationId }: ChatBoxPr
                             className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} mb-4`}
                         >
                             <div
-                                className={`max-w-[85%] md:max-w-[75%] px-4 py-3 rounded-2xl shadow-sm text-[15px] leading-relaxed break-words
+                                className={`max-w-[92%] md:max-w-[75%] px-4 py-3 rounded-2xl shadow-sm text-[15px] leading-relaxed break-words
                   ${msg.role === 'user'
                                         ? 'bg-purple-600 text-white rounded-br-none'
                                         : 'bg-white dark:bg-zinc-800 text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-zinc-700 rounded-bl-none'
@@ -256,7 +256,7 @@ export default function ChatBox({ conversationId, setConversationId }: ChatBoxPr
                     onKeyDown={handleKeyDown}
                     placeholder="Pergunte algo estúpido..."
                     disabled={isLoading}
-                    className="w-full px-4 py-3 pr-12 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all shadow-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                    className="w-full px-4 py-3 pr-12 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all shadow-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 text-base"
                 />
                 <button
                     onClick={handleSend}
