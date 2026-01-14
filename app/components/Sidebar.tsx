@@ -29,10 +29,15 @@ export default function Sidebar({ currentConvId, onSelect, isOpen, setIsOpen, sh
     }, [shouldRefresh]);
 
     const fetchConversations = async () => {
-        const { data } = await supabase
+        const { data, error } = await supabase
             .from('conversations')
             .select('id, title, created_at')
+            .eq('user_id', 'anonymous_user') // Explicitly fetch our hardcoded user's chats
             .order('created_at', { ascending: false });
+
+        if (error) {
+            console.error('Erro ao buscar conversas:', error);
+        }
 
         if (data) setConversations(data);
     };
