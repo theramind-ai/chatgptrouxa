@@ -65,8 +65,16 @@
 }
 
 :root.dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  --background: #18181b;
+  /* zinc-950 */
+  --foreground: #fafafa;
+  /* zinc-50 */
+}
+
+/* Ensure body respects custom prop in dark mode immediately */
+body.dark {
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
 body {

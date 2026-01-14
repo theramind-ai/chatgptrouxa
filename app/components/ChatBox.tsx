@@ -29,6 +29,7 @@ export default function ChatBox({ conversationId, setConversationId }: ChatBoxPr
     useEffect(() => {
         if (!conversationId) {
             setMessages([]);
+            // Optional: reset input or other state
             return;
         }
 

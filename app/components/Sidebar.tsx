@@ -16,16 +16,17 @@ type SidebarProps = {
     onSelect: (convId: string | null) => void;
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
+    shouldRefresh?: number; // Prop trigger to reload list
 };
 
-export default function Sidebar({ currentConvId, onSelect, isOpen, setIsOpen }: SidebarProps) {
+export default function Sidebar({ currentConvId, onSelect, isOpen, setIsOpen, shouldRefresh }: SidebarProps) {
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [user, setUser] = useState<User | null>(null);
 
     useEffect(() => {
         supabase.auth.getUser().then(({ data }) => setUser(data.user));
         fetchConversations();
-    }, []);
+    }, [shouldRefresh]);
 
     const fetchConversations = async () => {
         const { data } = await supabase
@@ -55,7 +56,7 @@ export default function Sidebar({ currentConvId, onSelect, isOpen, setIsOpen }: 
 
             {/* Sidebar Panel */}
             <div className={`
-        fixed inset-y-0 left-0 z-40 w-64 bg-gray-100 dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-800 transform transition-transform duration-300 ease-in-out
+        fixed inset-y-0 left-0 z-40 w-64 bg-gray-50 dark:bg-zinc-900 border-r border-gray-200 dark:border-zinc-800 transform transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         md:translate-x-0 md:static md:h-screen flex flex-col
       `}>
@@ -63,7 +64,7 @@ export default function Sidebar({ currentConvId, onSelect, isOpen, setIsOpen }: 
                     <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Histórico</h2>
                     <button
                         onClick={() => onSelect(null)}
-                        className="flex items-center gap-2 w-full px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-sm font-medium"
+                        className="flex items-center gap-2 w-full px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors text-sm font-medium shadow-md"
                     >
                         <Plus className="w-4 h-4" /> Nova Conversa
                     </button>
@@ -78,8 +79,8 @@ export default function Sidebar({ currentConvId, onSelect, isOpen, setIsOpen }: 
                                 key={conv.id}
                                 onClick={() => onSelect(conv.id)}
                                 className={`group flex items-center justify-between px-3 py-2.5 rounded-lg text-sm cursor-pointer transition-colors ${currentConvId === conv.id
-                                        ? 'bg-white dark:bg-zinc-800 shadow-sm border border-gray-200 dark:border-zinc-700'
-                                        : 'hover:bg-gray-200 dark:hover:bg-zinc-800/50 text-gray-600 dark:text-gray-400'
+                                    ? 'bg-white dark:bg-zinc-800 shadow-sm border border-gray-200 dark:border-zinc-700'
+                                    : 'hover:bg-gray-200 dark:hover:bg-zinc-800/50 text-gray-600 dark:text-gray-400'
                                     }`}
                             >
                                 <div className="flex items-center gap-2 truncate pr-2">
