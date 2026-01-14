@@ -169,20 +169,20 @@ export default function ChatBox({ conversationId, setConversationId }: ChatBoxPr
     };
 
     return (
-        <div className="flex flex-col h-screen max-w-4xl mx-auto p-4 md:p-6 transition-colors duration-500 z-10 relative">
+        <div className="flex flex-col h-screen max-w-4xl mx-auto p-2 md:p-6 transition-colors duration-500 z-10 relative">
             {mode === 'caos_total' && <MeltingCorner />}
 
             {/* Header */}
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-border pl-12 md:pl-0">
-                <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent flex items-center gap-2">
+            <div className="flex items-center justify-between mb-2 md:mb-6 pb-2 md:pb-4 border-b border-border pl-10 md:pl-0 gap-2">
+                <h1 className="flex-1 min-w-0 flex items-center gap-2 text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
                     <Sparkles className="w-6 h-6 text-purple-500 shrink-0" />
-                    <span className="truncate max-w-[120px] md:max-w-none">ChatGPTrouxa</span>
+                    <span className="truncate">ChatGPTrouxa</span>
                 </h1>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
                     {/* Dark Mode Toggle */}
                     <button
                         onClick={() => setIsDark(!isDark)}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-500 dark:text-gray-400"
+                        className="p-1.5 md:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-500 dark:text-gray-400"
                         title={isDark ? "Modo Claro" : "Modo Escuro"}
                     >
                         {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -190,17 +190,17 @@ export default function ChatBox({ conversationId, setConversationId }: ChatBoxPr
 
                     <button
                         onClick={() => setMessages([])}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-500"
+                        className="p-1.5 md:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-500"
                         title="Limpar tela"
                     >
                         <Trash2 className="w-5 h-5" />
                     </button>
 
-                    <div className="relative">
+                    <div className="relative max-w-[110px] md:max-w-none">
                         <select
                             value={mode}
                             onChange={(e) => setMode(e.target.value as ModeKey)}
-                            className={`appearance-none pl-3 pr-8 py-1.5 rounded-full text-sm font-medium transition-all cursor-pointer outline-none focus:ring-2 focus:ring-purple-500 ${mode === 'caos_total'
+                            className={`w-full appearance-none pl-3 pr-8 py-1.5 rounded-full text-xs md:text-sm font-medium transition-all cursor-pointer outline-none focus:ring-2 focus:ring-purple-500 truncate ${mode === 'caos_total'
                                 ? 'bg-red-500 text-white animate-pulse border-red-700'
                                 : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-100 border-transparent'
                                 }`}
@@ -248,20 +248,27 @@ export default function ChatBox({ conversationId, setConversationId }: ChatBoxPr
             </div>
 
             {/* Input Area */}
-            <div className="flex gap-2 relative">
-                <input
-                    ref={inputRef}
+            <div className="relative flex items-end gap-2 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl p-2 shadow-sm transition-all focus-within:ring-2 focus-within:ring-purple-500">
+                <textarea
+                    ref={inputRef as any}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSend();
+                        }
+                    }}
                     placeholder="Pergunte algo estúpido..."
                     disabled={isLoading}
-                    className="w-full px-4 py-3 pr-12 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all shadow-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 text-base"
+                    rows={1}
+                    className="w-full max-h-32 py-2 pl-2 md:pl-3 bg-transparent text-gray-900 dark:text-gray-100 focus:outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500 resize-none text-base leading-relaxed scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-zinc-600"
+                    style={{ minHeight: '44px' }}
                 />
                 <button
                     onClick={handleSend}
                     disabled={isLoading || !input.trim()}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="mb-1 p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
                 >
                     <Send className="w-5 h-5" />
                 </button>
