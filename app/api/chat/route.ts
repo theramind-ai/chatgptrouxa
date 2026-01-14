@@ -19,19 +19,48 @@ export async function POST(req: Request) {
             );
         }
 
-        const { content, mode } = await req.json();
+        const { content, mode, conversationId } = await req.json();
 
         if (!content) {
             return NextResponse.json({ error: 'Faltou o texto, gênio.' }, { status: 400 });
         }
 
-        // 2. Prepare Prompt
+        // For now, hardcode userId. In a real app, this would come from auth.
+        const userId = 'anonymous_user';
+        let activeConversationId = conversationId;
+
+        // A. If no conversationId, create one
+        if (!activeConversationId) {
+            const { data: conv, error } = await supabase.from('conversations').insert({
+                title: content.substring(0, 30) + '...',
+                user_id: userId
+            }).select('id').single(); // Use .select('id').single() instead of .selectSingle()
+
+            if (conv) activeConversationId = conv.id;
+        }
+
+        // B. Fetch Context (Previous Messages)
+        let contextMessages: any[] = [];
+        if (activeConversationId) {
+            const { data: prevMsgs } = await supabase.from('messages')
+                .select('role, content')
+                .eq('conversation_id', activeConversationId)
+                .order('created_at', { ascending: true })
+                .limit(10); // Context window of last 10 messages
+
+            if (prevMsgs) {
+                contextMessages = prevMsgs.map(m => ({ role: m.role, content: m.content }));
+            }
+        }
+
+        // 2. Prepare Prompt with Context (Memory)
         // Default to 'classico' if invalid mode invalid
         const selectedMode = (MODES[mode as ModeKey] ? mode : 'classico') as ModeKey;
         const modeInstruction = MODES[selectedMode];
 
         const messages = [
             { role: 'system', content: `${BASE_PROMPT}\n${modeInstruction}` },
+            ...contextMessages,
             { role: 'user', content }
         ];
 
@@ -41,6 +70,10 @@ export async function POST(req: Request) {
             messages: messages as any,
             stream: true,
         });
+
+        // Capture the ID here for the closure
+        const finalConversationId = activeConversationId;
+        const finalUserId = userId; // Also capture userId to be safe although it's const
 
         // 4. Create Stream response
         const encoder = new TextEncoder();
@@ -60,10 +93,6 @@ export async function POST(req: Request) {
                 controller.close();
 
                 // 5. Fire-and-forget logging to Supabase
-                // We log after the stream is done to get the full response content
-                // We use the ID that was determined/created at the start of the handler
-                const finalConversationId = activeConversationId;
-
                 try {
                     (async () => {
                         // Insert User Message
@@ -95,7 +124,7 @@ export async function POST(req: Request) {
                 'Content-Type': 'text/event-stream',
                 'Cache-Control': 'no-cache',
                 'Connection': 'keep-alive',
-                'X-Conversation-Id': activeConversationId || '',
+                'X-Conversation-Id': finalConversationId || '',
             },
         });
 
