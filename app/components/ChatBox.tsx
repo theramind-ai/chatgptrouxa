@@ -173,10 +173,10 @@ export default function ChatBox({ conversationId, setConversationId }: ChatBoxPr
             {mode === 'caos_total' && <MeltingCorner />}
 
             {/* Header */}
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent flex items-center gap-2">
-                    <Sparkles className="w-6 h-6 text-purple-500" />
-                    ChatGPTrouxa
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-border pl-12 md:pl-0">
+                <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent flex items-center gap-2">
+                    <Sparkles className="w-6 h-6 text-purple-500 shrink-0" />
+                    <span className="truncate max-w-[120px] md:max-w-none">ChatGPTrouxa</span>
                 </h1>
                 <div className="flex items-center gap-2">
                     {/* Dark Mode Toggle */}
@@ -232,7 +232,7 @@ export default function ChatBox({ conversationId, setConversationId }: ChatBoxPr
                             className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'} mb-4`}
                         >
                             <div
-                                className={`max-w-[85%] md:max-w-[75%] px-4 py-3 rounded-2xl shadow-sm text-[15px] leading-relaxed
+                                className={`max-w-[85%] md:max-w-[75%] px-4 py-3 rounded-2xl shadow-sm text-[15px] leading-relaxed break-words
                   ${msg.role === 'user'
                                         ? 'bg-purple-600 text-white rounded-br-none'
                                         : 'bg-white dark:bg-zinc-800 text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-zinc-700 rounded-bl-none'
@@ -256,7 +256,7 @@ export default function ChatBox({ conversationId, setConversationId }: ChatBoxPr
                     onKeyDown={handleKeyDown}
                     placeholder="Pergunte algo estúpido..."
                     disabled={isLoading}
-                    className="w-full px-4 py-3 pr-12 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all shadow-sm"
+                    className="w-full px-4 py-3 pr-12 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all shadow-sm placeholder:text-gray-400 dark:placeholder:text-gray-500"
                 />
                 <button
                     onClick={handleSend}
