@@ -1,5 +1,5 @@
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Mic, Square, Loader2, SendHorizontal, Keyboard } from 'lucide-react';
 
 type VoiceInputProps = {
@@ -11,80 +11,98 @@ type VoiceInputProps = {
 export default function VoiceInput({ onTranscription, onAutoSend, disabled }: VoiceInputProps) {
     const [isRecording, setIsRecording] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
-    const [autoSend, setAutoSend] = useState(false); // Default: Review mode
-    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-    const chunksRef = useRef<Blob[]>([]);
+    const [autoSend, setAutoSend] = useState(false);
+    const [isSupported, setIsSupported] = useState(true);
+    const recognitionRef = useRef<any>(null);
 
-    const startRecording = async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorderRef.current = new MediaRecorder(stream);
-            chunksRef.current = [];
+    useEffect(() => {
+        // Check if Web Speech API is supported
+        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
-            mediaRecorderRef.current.ondataavailable = (e) => {
-                if (e.data.size > 0) {
-                    chunksRef.current.push(e.data);
-                }
-            };
+        if (!SpeechRecognition) {
+            setIsSupported(false);
+            console.warn('Web Speech API not supported in this browser');
+            return;
+        }
 
-            mediaRecorderRef.current.onstop = async () => {
-                // Stop all tracks to release mic
-                stream.getTracks().forEach(track => track.stop());
+        // Initialize Speech Recognition
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'pt-BR'; // Portuguese (Brazil)
+        recognition.continuous = false; // Stop after one result
+        recognition.interimResults = false; // Only final results
+        recognition.maxAlternatives = 1;
 
-                const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
-                await handletranscription(audioBlob);
-            };
-
-            mediaRecorderRef.current.start();
+        recognition.onstart = () => {
             setIsRecording(true);
-        } catch (err) {
-            console.error('Error accessing microphone:', err);
-            alert('Não consegui acessar seu microfone. Tá mudo?');
+            setIsProcessing(false);
+        };
+
+        recognition.onresult = (event: any) => {
+            const transcript = event.results[0][0].transcript;
+
+            if (autoSend) {
+                onAutoSend(transcript);
+            } else {
+                onTranscription(transcript);
+            }
+        };
+
+        recognition.onerror = (event: any) => {
+            console.error('Speech recognition error:', event.error);
+            setIsRecording(false);
+            setIsProcessing(false);
+
+            if (event.error === 'no-speech') {
+                alert('Não detectei nenhuma fala. Tente novamente.');
+            } else if (event.error === 'not-allowed') {
+                alert('Permissão de microfone negada. Habilite nas configurações do navegador.');
+            } else {
+                alert(`Erro ao reconhecer fala: ${event.error}`);
+            }
+        };
+
+        recognition.onend = () => {
+            setIsRecording(false);
+            setIsProcessing(false);
+        };
+
+        recognitionRef.current = recognition;
+
+        return () => {
+            if (recognitionRef.current) {
+                recognitionRef.current.abort();
+            }
+        };
+    }, [autoSend, onTranscription, onAutoSend]);
+
+    const startRecording = () => {
+        if (!recognitionRef.current || !isSupported) {
+            alert('Reconhecimento de voz não suportado neste navegador. Use Chrome ou Edge.');
+            return;
+        }
+
+        try {
+            recognitionRef.current.start();
+        } catch (error) {
+            console.error('Error starting recognition:', error);
+            alert('Erro ao iniciar gravação. Tente novamente.');
         }
     };
 
     const stopRecording = () => {
-        if (mediaRecorderRef.current && isRecording) {
-            mediaRecorderRef.current.stop();
-            setIsRecording(false);
+        if (recognitionRef.current && isRecording) {
+            recognitionRef.current.stop();
             setIsProcessing(true);
         }
     };
 
-    const handletranscription = async (audioBlob: Blob) => {
-        try {
-            const formData = new FormData();
-            formData.append('file', audioBlob, 'voice.webm');
-
-            const res = await fetch('/api/transcribe', {
-                method: 'POST',
-                body: formData,
-            });
-
-            if (!res.ok) throw new Error('Transcription failed');
-
-            const data = await res.json();
-            const text = data.text;
-
-            if (!text) throw new Error('No text returned');
-
-            if (autoSend) {
-                onAutoSend(text);
-            } else {
-                onTranscription(text);
-            }
-
-        } catch (error) {
-            console.error(error);
-            alert('Erro ao transcrever. Fale mais alto ou tire a batata da boca.');
-        } finally {
-            setIsProcessing(false);
-        }
-    };
+    if (!isSupported) {
+        return null; // Hide button if not supported
+    }
 
     return (
         <div className="flex items-center gap-2">
-            {/* Mode Toggle (Hidden on mobile usually to save space, but good for power users) */}
+            {/* Mode Toggle */}
             <button
                 onClick={() => setAutoSend(!autoSend)}
                 className={`hidden md:flex items-center gap-1 text-[10px] px-2 py-1 rounded-full border transition-all ${autoSend
