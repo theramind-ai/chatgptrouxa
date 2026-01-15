@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Sparkles, Zap, Trash2, Moon, Sun } from 'lucide-react';
 import MeltingCorner from './MeltingCorner';
+import SpotifyPlayer from './SpotifyPlayer';
+import VoiceInput from './VoiceInput';
 import { MODE_LABELS, ModeKey } from '@/lib/prompts';
 import { supabase } from '@/lib/supabaseClient';
 
@@ -22,14 +24,14 @@ export default function ChatBox({ conversationId, setConversationId }: ChatBoxPr
     const [isLoading, setIsLoading] = useState(false);
     const [mode, setMode] = useState<ModeKey>('classico');
     const [isDark, setIsDark] = useState(false);
+    const [spotifyQuery, setSpotifyQuery] = useState<string | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
+    const inputRef = useRef<HTMLTextAreaElement>(null);
 
     // Load messages when conversationId changes
     useEffect(() => {
         if (!conversationId) {
             setMessages([]);
-            // Optional: reset input or other state
             return;
         }
 
@@ -42,7 +44,6 @@ export default function ChatBox({ conversationId, setConversationId }: ChatBoxPr
                 .order('created_at', { ascending: true });
 
             if (data) {
-                // cast to correct type if needed
                 setMessages(data as Message[]);
             }
             setIsLoading(false);
@@ -78,10 +79,11 @@ export default function ChatBox({ conversationId, setConversationId }: ChatBoxPr
         }
     }, [mode]);
 
-    const handleSend = async () => {
-        if (!input.trim() || isLoading) return;
+    const handleSend = async (textOverride?: string) => {
+        const textToSend = textOverride || input;
+        if (!textToSend.trim() || isLoading) return;
 
-        const userMsg: Message = { role: 'user', content: input };
+        const userMsg: Message = { role: 'user', content: textToSend };
         setMessages((prev) => [...prev, userMsg]);
         setInput('');
         setIsLoading(true);
@@ -99,7 +101,6 @@ export default function ChatBox({ conversationId, setConversationId }: ChatBoxPr
                 }),
             });
 
-            // Optimistic update or header read
             const newConvId = response.headers.get('X-Conversation-Id');
             if (newConvId && newConvId !== conversationId) {
                 setConversationId(newConvId);
@@ -118,7 +119,6 @@ export default function ChatBox({ conversationId, setConversationId }: ChatBoxPr
             const decoder = new TextDecoder();
             let aiContent = '';
 
-            // Add initial AI placeholder
             setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
 
             while (true) {
@@ -138,6 +138,12 @@ export default function ChatBox({ conversationId, setConversationId }: ChatBoxPr
                 });
             }
 
+            // Check for Spotify Tag after full response
+            const spotifyMatch = aiContent.match(/\[SPOTIFY:\s*(.*?)\]/);
+            if (spotifyMatch && spotifyMatch[1]) {
+                setSpotifyQuery(spotifyMatch[1]);
+            }
+
         } catch (error) {
             console.error(error);
             setMessages((prev) => [
@@ -146,31 +152,16 @@ export default function ChatBox({ conversationId, setConversationId }: ChatBoxPr
             ]);
         } finally {
             setIsLoading(false);
-            // Re-focus input after sending
             setTimeout(() => inputRef.current?.focus(), 100);
-        }
-    };
-
-    // Effect to apply global theme
-    useEffect(() => {
-        const body = document.body;
-        if (mode === 'caos_total') {
-            body.classList.add('caos-mode');
-        } else {
-            body.classList.remove('caos-mode');
-        }
-    }, [mode]);
-
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSend();
         }
     };
 
     return (
         <div className="flex flex-col h-screen max-w-4xl mx-auto p-2 md:p-6 transition-colors duration-500 z-10 relative">
             {mode === 'caos_total' && <MeltingCorner />}
+
+            {/* Spotify Player Overlay */}
+            <SpotifyPlayer query={spotifyQuery || ''} onClose={() => setSpotifyQuery(null)} />
 
             {/* Header */}
             <div className="flex items-center justify-between mb-2 md:mb-6 pb-2 md:pb-4 border-b border-border pl-10 md:pl-0 gap-2">
@@ -179,7 +170,6 @@ export default function ChatBox({ conversationId, setConversationId }: ChatBoxPr
                     <span className="truncate">ChatGPTrouxa</span>
                 </h1>
                 <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
-                    {/* Dark Mode Toggle */}
                     <button
                         onClick={() => setIsDark(!isDark)}
                         className="p-1.5 md:p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors text-gray-500 dark:text-gray-400"
@@ -239,7 +229,7 @@ export default function ChatBox({ conversationId, setConversationId }: ChatBoxPr
                                     }
                 `}
                             >
-                                {msg.content}
+                                {msg.content.replace(/\[SPOTIFY:.*?\]/, '')}
                             </div>
                         </div>
                     ))
@@ -250,7 +240,7 @@ export default function ChatBox({ conversationId, setConversationId }: ChatBoxPr
             {/* Input Area */}
             <div className="relative flex items-end gap-2 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl p-2 shadow-sm transition-all focus-within:ring-2 focus-within:ring-purple-500">
                 <textarea
-                    ref={inputRef as any}
+                    ref={inputRef}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => {
@@ -265,8 +255,16 @@ export default function ChatBox({ conversationId, setConversationId }: ChatBoxPr
                     className="w-full max-h-32 py-2 pl-2 md:pl-3 bg-transparent text-gray-900 dark:text-gray-100 focus:outline-none placeholder:text-gray-400 dark:placeholder:text-gray-500 resize-none text-base leading-relaxed scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-zinc-600"
                     style={{ minHeight: '44px' }}
                 />
+
+                {/* Voice Input Component */}
+                <VoiceInput
+                    onTranscription={(text) => setInput(text)}
+                    onAutoSend={(text) => handleSend(text)}
+                    disabled={isLoading}
+                />
+
                 <button
-                    onClick={handleSend}
+                    onClick={() => handleSend()}
                     disabled={isLoading || !input.trim()}
                     className="mb-1 p-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
                 >
